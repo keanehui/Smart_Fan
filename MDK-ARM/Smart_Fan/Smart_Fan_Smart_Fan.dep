@@ -31,8 +31,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_sram.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_fsmc.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x60795AE8)
 I (..\Core\Src\ascii.h)(0x5D9178A2)
-F (..\Core\Src\helper_func.c)(0x607ED3C2)(--c99 -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_Smart_Fan-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="523" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o smart_fan\helper_func.o --omf_browse smart_fan\helper_func.crf --depend smart_fan\helper_func.d)
-I (..\Core\Src\helper_func.h)(0x607ED383)
+F (..\Core\Src\helper_func.c)(0x6085687C)(--c99 -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_Smart_Fan-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="523" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o smart_fan\helper_func.o --omf_browse smart_fan\helper_func.crf --depend smart_fan\helper_func.d)
+I (..\Core\Src\helper_func.h)(0x60856838)
 I (../Core/Inc/main.h)(0x607E7C22)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x60795AE8)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x607E7C22)
@@ -63,7 +63,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_sram.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_fsmc.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x60795AE8)
 I (..\Core\Src\lcd.h)(0x600A2E26)
-F (../Core/Src/main.c)(0x607ED45E)(--c99 -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_Smart_Fan-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="523" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o smart_fan\main.o --omf_browse smart_fan\main.crf --depend smart_fan\main.d)
+F (../Core/Src/main.c)(0x60856B4A)(--c99 -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_Smart_Fan-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="523" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o smart_fan\main.o --omf_browse smart_fan\main.crf --depend smart_fan\main.d)
 I (../Core/Inc/main.h)(0x607E7C22)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x60795AE8)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x607E7C22)
@@ -94,7 +94,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_sram.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_fsmc.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x60795AE8)
 I (../Core/Src/lcd.h)(0x600A2E26)
-I (../Core/Src/helper_func.h)(0x607ED383)
+I (../Core/Src/helper_func.h)(0x60856838)
 F (../Core/Src/stm32f1xx_it.c)(0x607E7C21)(--c99 -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_Smart_Fan-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="523" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o smart_fan\stm32f1xx_it.o --omf_browse smart_fan\stm32f1xx_it.crf --depend smart_fan\stm32f1xx_it.d)
 I (../Core/Inc/main.h)(0x607E7C22)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x60795AE8)
@@ -156,6 +156,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_sram.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_fsmc.h)(0x60795AE8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x60795AE8)
+F (..\Core\Src\lcd.h)(0x600A2E26)()
 F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c)(0x60795AE8)(--c99 -c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_Smart_Fan-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="523" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o smart_fan\stm32f1xx_hal_gpio_ex.o --omf_browse smart_fan\stm32f1xx_hal_gpio_ex.crf --depend smart_fan\stm32f1xx_hal_gpio_ex.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x60795AE8)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x607E7C22)

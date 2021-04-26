@@ -110,9 +110,14 @@ int main(void)
 	
 	int air_tempt = 25;
 	float fan_speed_pctg = 0; // 0 to 100
+	int fan_speed_auto = 3000;
 	int fan_op_mode = 0; // off, auto, manual
 	int silent_enabled = 0; // off, on
 	
+	
+	screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, LABELS);
+	screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, OP_MODE);
+	screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, SILENT_MODE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -126,31 +131,29 @@ int main(void)
 		
 		// set fan_speed_pctg
 		HAL_ADC_PollForConversion(&hadc1, 1000);
-		
-		fan_speed_pctg = HAL_ADC_GetValue(&hadc1)/4095.0;		
-		
-		screen_draw_ui(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled);
-		
-		int old_fan_mode = fan_op_mode;
-		int old_silent_enabled = silent_enabled;
+		if (fan_op_mode == 2)
+			fan_speed_pctg = HAL_ADC_GetValue(&hadc1)/4095.0;	
+		else 
+			fan_speed_pctg = fan_speed_auto/4095.0;
+
 		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET) { // K1 switch op mode
 			fan_op_mode = fan_switch_op_mode(fan_op_mode);
-			if (fan_op_mode == 2) { 
+			screen_clear(OP_MODE);
+			screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, OP_MODE);
+			if (fan_op_mode == 2) 
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET); // enable manual led
-			} else {
+			else
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET); // disable manual led
-			}
-			if (fan_op_mode != old_fan_mode) { // refresh op mode underline
-				screen_clear(OP_MODE);
-			}
+			
 		} else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET) { // K2 switch silent mode
 			silent_enabled = fan_switch_silent_mode(silent_enabled);
-			if (silent_enabled != old_silent_enabled) { // refresh silent mode underline
-				screen_clear(SILENT_MODE);
-			}
+			screen_clear(SILENT_MODE);
+			screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, SILENT_MODE);
 		}
 		
-		HAL_Delay(250);
+		screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, TEMPT);
+		screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, SPEED);
+		HAL_Delay(500);
 		screen_clear(TEMPT);
 		screen_clear(SPEED);
 		
