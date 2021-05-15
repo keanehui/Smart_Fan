@@ -22,7 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "lcd.h"
+#include "lcdtp.h"
+#include "xpt2046.h"
 #include "helper_func.h"
 /* USER CODE END Includes */
 
@@ -42,6 +43,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
+ADC_HandleTypeDef hadc3;
+
+TIM_HandleTypeDef htim2;
 
 SRAM_HandleTypeDef hsram1;
 
@@ -54,23 +59,26 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_FSMC_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_ADC2_Init(void);
+static void MX_ADC3_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void u_LCD_DrawDot_size(uint16_t Col, uint16_t Pag, uint16_t Wid, uint16_t Hgt, uint16_t Color) {
-	for (int i = Col; i < Col+Wid; ++i) {
-		for (int j = Pag; j < Pag+Hgt; ++j) {
-			LCD_DrawDot(i, j, Color);
-		}
-	}
-	return;
+void PWM_set_value(uint16_t value) {
+	TIM_OC_InitTypeDef sConfigOC;
+	sConfigOC.OCMode = TIM_OCMODE_PWM1;
+	sConfigOC.Pulse = value;
+	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+	HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 }
 
-
-
+struct Fan_Para_t fanPara;
 /* USER CODE END 0 */
 
 /**
@@ -96,28 +104,65 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+	
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_FSMC_Init();
   MX_ADC1_Init();
+  MX_ADC2_Init();
+  MX_ADC3_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+	macXPT2046_CS_DISABLE();
 	LCD_INIT();
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+	PWM_set_value(0);
+	while(!XPT2046_Touch_Calibrate());
+	LCD_GramScan(1);
+	LCD_Clear(0, 0, 240, 320, WHITE);
+	LCD_DrawString_Color(85, 290, "Smart Fan", BLACK, WHITE);
+	
 	HAL_ADCEx_Calibration_Start(&hadc1);
+	HAL_ADCEx_Calibration_Start(&hadc2);
+	HAL_ADCEx_Calibration_Start(&hadc3);
 	HAL_ADC_Start(&hadc1);
+	HAL_ADC_Start(&hadc2);
+	HAL_ADC_Start(&hadc3);
 	
-	int air_tempt = 25;
-	float fan_speed_pctg = 0; // 0 to 100
-	int fan_speed_auto = 3000;
-	int fan_op_mode = 0; // off, auto, manual
-	int silent_enabled = 0; // off, on
+	screen_draw_ui_section(&fanPara, LABELS);
+	screen_draw_ui_section(&fanPara, OP_MODE);
+	screen_draw_ui_section(&fanPara, SILENT_MODE);
+	screen_draw_ui_section(&fanPara, COUNTER);
+	screen_draw_ui_section(&fanPara, COUNTER_CONTROL);
 	
 	
-	screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, LABELS);
-	screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, OP_MODE);
-	screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, SILENT_MODE);
+	fanPara.air_tempt = 0.0;
+	fanPara.fan_speed_pctg = 0.0; // 0 to 100
+	fanPara.fan_speed_input_m = 0; // adc
+	fanPara.op_mode = 0; // off, auto, manual
+	fanPara.silent_enabled = 0; // off, on
+	fanPara.ctime_hms[0] = 0;
+	fanPara.ctime_hms[1] = 0;
+	fanPara.ctime_hms[2] = 0;
+	fanPara.ctime_selected[0] = 0;
+	fanPara.ctime_selected[1] = 0;
+	fanPara.ctime_selected[2] = 0;
+	fanPara.ctime_status = 0;
+	fanPara.sound_intensity = 0;
+	fanPara.touch_X = 0;
+	fanPara.touch_Y = 0;
+	fanPara.sys_starttime = HAL_GetTick();
+	fanPara.screen_nextrefresh = fanPara.sys_starttime;
+	fanPara.counter_nexttick = fanPara.sys_starttime;
+	fanPara.button_nextcheck = fanPara.sys_starttime;
+	fanPara.screen_nexttouch = fanPara.sys_starttime;
+	fanPara.tempt_nextread = fanPara.sys_starttime;
+	fanPara.sound_nextread = fanPara.sys_starttime;
+	strType_XPT2046_Coordinate touch_XY;
+	
+	fan_turnoff(&fanPara);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -127,36 +172,116 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		// set air_tempt
+		fanPara.currentTime = HAL_GetTick();
 		
-		// set fan_speed_pctg
-		HAL_ADC_PollForConversion(&hadc1, 1000);
-		if (fan_op_mode == 2)
-			fan_speed_pctg = HAL_ADC_GetValue(&hadc1)/4095.0;	
-		else 
-			fan_speed_pctg = fan_speed_auto/4095.0;
+		// set air_tempt
+		if (HAL_GetTick() >= fanPara.tempt_nextread) {
+			HAL_ADC_PollForConversion(&hadc3, 1000);
+			fanPara.air_tempt = (float)HAL_ADC_GetValue(&hadc3);
+			fanPara.air_tempt = fanPara.air_tempt / 10.0;
+			fanPara.air_tempt = fanPara.air_tempt - 5;
 
-		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET) { // K1 switch op mode
-			fan_op_mode = fan_switch_op_mode(fan_op_mode);
-			screen_clear(OP_MODE);
-			screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, OP_MODE);
-			if (fan_op_mode == 2) 
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET); // enable manual led
-			else
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET); // disable manual led
 			
-		} else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET) { // K2 switch silent mode
-			silent_enabled = fan_switch_silent_mode(silent_enabled);
-			screen_clear(SILENT_MODE);
-			screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, SILENT_MODE);
+			fanPara.tempt_nextread += 1000;
+		}
+
+		
+		// set sound intensity
+		
+		if (HAL_GetTick() >= fanPara.sound_nextread) {
+			uint32_t ADC2_result = 0;
+			HAL_ADC_PollForConversion(&hadc2, 1000);
+			ADC2_result = HAL_ADC_GetValue(&hadc2);
+			if (ADC2_result != 0)
+				fanPara.sound_intensity = ADC2_result;
+			
+			fanPara.sound_nextread += 1000;
 		}
 		
-		screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, TEMPT);
-		screen_draw_ui_section(air_tempt, fan_speed_pctg, fan_op_mode, silent_enabled, SPEED);
-		HAL_Delay(500);
-		screen_clear(TEMPT);
-		screen_clear(SPEED);
+		// set manual input
+		HAL_ADC_PollForConversion(&hadc1, 1000);
+		fanPara.fan_speed_input_m = HAL_ADC_GetValue(&hadc1);
+
+		// set fan_speed_pctg
+		fanPara.fan_speed_pctg = fan_update_pctg(&fanPara);
 		
+		// set RGB indicator
+		RGB_set(&fanPara);
+		
+		// set motor
+		motor_set(fanPara.fan_speed_pctg);
+		
+		// touch handling
+		fanPara.touch_X = 0;
+		fanPara.touch_Y = 0;
+		if (fanPara.currentTime >= fanPara.screen_nexttouch) { 
+			XPT2046_Get_TouchedPoint (&touch_XY, &strXPT2046_TouchPara);
+			fanPara.touch_X = touch_XY.x;
+			fanPara.touch_Y = touch_XY.y;
+			fanPara.screen_nexttouch += 100;
+		}
+		if (ucXPT2046_TouchFlag == 1) {
+			// op mode
+			fan_switch_op_mode(&fanPara);
+			screen_clear_section(OP_MODE);
+			screen_draw_ui_section(&fanPara, OP_MODE);
+			
+			// silent enable
+			fan_switch_silent_mode(&fanPara);
+			screen_clear_section(SILENT_MODE);
+			screen_draw_ui_section(&fanPara, SILENT_MODE);
+		
+			fanPara.touch_X = 0;
+			fanPara.touch_Y = 0;
+			ucXPT2046_TouchFlag = 0;
+		}
+		
+		fanPara.currentTime = HAL_GetTick();
+		if (fanPara.currentTime >= fanPara.button_nextcheck) {
+			if (fanPara.op_mode != 0) {
+				if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET) { // K1 switch op mode
+				if (fanPara.ctime_status == 0) {
+					ctime_toggleSelected(&fanPara);
+					screen_clear_section(COUNTER_SELECTOR);
+					screen_draw_ui_section(&fanPara, COUNTER_SELECTOR);
+					}
+				}
+				else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET) { // K2 switch silent mode/start/cancel
+					int ctime_current_selected = ctime_getSelected(&fanPara);
+					if (ctime_current_selected == -1) {
+						ctime_start_cancel(&fanPara);
+						screen_clear_section(COUNTER_CONTROL);
+						screen_draw_ui_section(&fanPara, COUNTER_CONTROL);
+					} else {
+						ctime_increSelected(&fanPara);
+					}
+				}
+				fanPara.button_nextcheck += 300;
+			}
+		}
+		
+		
+		
+		if (fanPara.ctime_status == 1 && HAL_GetTick() > fanPara.counter_nexttick) { // if counter started, tick every sec
+			ctime_tick(&fanPara);
+			if (fanPara.ctime_status == 0) { // time up
+				fan_turnoff(&fanPara);
+				screen_clear_section(OP_MODE);
+				screen_draw_ui_section(&fanPara, OP_MODE);
+				screen_clear_section(SILENT_MODE);
+				screen_draw_ui_section(&fanPara, SILENT_MODE);
+				screen_clear_section(COUNTER_CONTROL);
+				screen_draw_ui_section(&fanPara, COUNTER_CONTROL);
+			}
+			fanPara.counter_nexttick += 1000;
+		}
+		
+		
+		if (HAL_GetTick() > fanPara.screen_nextrefresh) { // refresh selected
+			screen_info_refresh(&fanPara);
+			fanPara.screen_nextrefresh += 500;
+		}
+
   }
   /* USER CODE END 3 */
 }
@@ -180,7 +305,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL7;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -199,7 +324,7 @@ void SystemClock_Config(void)
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV4;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -252,6 +377,155 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+  /** Common config
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc2.Init.ContinuousConvMode = ENABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_15;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
+
+}
+
+/**
+  * @brief ADC3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC3_Init(void)
+{
+
+  /* USER CODE BEGIN ADC3_Init 0 */
+
+  /* USER CODE END ADC3_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC3_Init 1 */
+
+  /* USER CODE END ADC3_Init 1 */
+  /** Common config
+  */
+  hadc3.Instance = ADC3;
+  hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc3.Init.ContinuousConvMode = ENABLE;
+  hadc3.Init.DiscontinuousConvMode = DISABLE;
+  hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc3.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&hadc3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_13;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC3_Init 2 */
+
+  /* USER CODE END ADC3_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 1000;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 1200-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -261,20 +535,42 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2|GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_5|GPIO_PIN_9, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PE2 PE0 PE1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PE3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PE4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
@@ -288,26 +584,30 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PD12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_12;
+  /*Configure GPIO pin : PA4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  /*Configure GPIO pins : PB0 PB1 PB5 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_5|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PE1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  /*Configure GPIO pins : PD12 PD13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 }
 

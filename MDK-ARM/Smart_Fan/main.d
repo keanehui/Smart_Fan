@@ -29,5 +29,9 @@ smart_fan\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h
 smart_fan\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_sram.h
 smart_fan\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_fsmc.h
 smart_fan\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
-smart_fan\main.o: ../Core/Src/lcd.h
+smart_fan\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
+smart_fan\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
+smart_fan\main.o: ../Core/Src/lcdtp.h
+smart_fan\main.o: ../Core/Src/xpt2046.h
 smart_fan\main.o: ../Core/Src/helper_func.h
+smart_fan\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h

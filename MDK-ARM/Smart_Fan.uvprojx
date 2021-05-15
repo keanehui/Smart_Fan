@@ -335,7 +335,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xE</Define>
               <Undefine></Undefine>
-              <IncludePath>../Core/Inc;     ../Drivers/STM32F1xx_HAL_Driver/Inc;     ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;     ../Drivers/CMSIS/Device/ST/STM32F1xx/Include;     ../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Core/Inc;                                     ../Drivers/STM32F1xx_HAL_Driver/Inc;                                     ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;                                     ../Drivers/CMSIS/Device/ST/STM32F1xx/Include;                                     ../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -390,14 +390,29 @@
           <GroupName>Application/User/Core</GroupName>
           <Files>
             <File>
-              <FileName>lcd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\lcd.c</FilePath>
-            </File>
-            <File>
               <FileName>helper_func.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\helper_func.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcdtp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\lcdtp.c</FilePath>
+            </File>
+            <File>
+              <FileName>xpt2046.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\xpt2046.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcdtp.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Src\lcdtp.h</FilePath>
+            </File>
+            <File>
+              <FileName>xpt2046.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Src\xpt2046.h</FilePath>
             </File>
             <File>
               <FileName>main.c</FileName>
@@ -413,11 +428,6 @@
               <FileName>stm32f1xx_hal_msp.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f1xx_hal_msp.c</FilePath>
-            </File>
-            <File>
-              <FileName>lcd.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Src\lcd.h</FilePath>
             </File>
           </Files>
         </Group>

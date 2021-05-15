@@ -1,7 +1,8 @@
 --cpu Cortex-M3
 "smart_fan\startup_stm32f103xe.o"
-"smart_fan\lcd.o"
 "smart_fan\helper_func.o"
+"smart_fan\lcdtp.o"
+"smart_fan\xpt2046.o"
 "smart_fan\main.o"
 "smart_fan\stm32f1xx_it.o"
 "smart_fan\stm32f1xx_hal_msp.o"
